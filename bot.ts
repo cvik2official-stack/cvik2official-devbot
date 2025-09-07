@@ -13,6 +13,38 @@ if (!BOT_TOKEN) {
 
 const bot = new Bot(BOT_TOKEN);
 
+// Minimal /start handler (always present) showing reply and inline examples.
+bot.command('start', async (ctx) => {
+  try {
+    const cmds = await loadCsvCommands();
+    const first = cmds && cmds.length ? cmds[0] : null;
+    const welcome = first && first.answer ? first.answer : 'Welcome! Use /help to see available commands.';
+
+    // Prefer keyboard from first row if available, otherwise a small default reply keyboard
+    const kbVal = first && first.keyboard ? first.keyboard : 'text|help||inline:Use demo';
+    const kb = buildKeyboardFromString(kbVal);
+
+    if (kb) {
+      if (typeof kb === 'object' && (kb.reply || kb.inline)) {
+        if (kb.reply) await ctx.reply(welcome, { reply_markup: kb.reply });
+        if (kb.inline) await ctx.reply('Inline example:', { reply_markup: kb.inline });
+        return;
+      }
+      if ((kb as any).constructor && (kb as any).constructor.name === 'InlineKeyboard') {
+        await ctx.reply(welcome, { reply_markup: kb });
+        return;
+      }
+      await ctx.reply(welcome, { reply_markup: kb });
+      return;
+    }
+
+    await ctx.reply(welcome);
+  } catch (err) {
+    console.error('/start handler error', err);
+    await ctx.reply('Welcome! Use /help to see available commands.');
+  }
+});
+
 type Cmd = { name: string; answer: string; keyboard: string; aliases: string[] };
 const commandsMap = new Map<string, Cmd>();
 
@@ -97,19 +129,45 @@ function buildKeyboardFromString(k?: string) {
   if (!k) return null;
   const raw = String(k).trim();
 
-  // inline syntax: starts with `inline:` then comma-separated button labels or url:Label|http...
+  // support combined reply||inline syntax: reply part before '||', inline part after
+  if (raw.includes('||')) {
+    const [replyPart, inlinePart] = raw.split('||').map(s => s.trim());
+    const result: any = {};
+    if (replyPart) {
+      const rows = replyPart.split(/\r?\n|\|/).map(r => r.split(',').map(c => c.trim()).filter(Boolean)).filter(r => r.length > 0);
+      if (rows.length > 0) result.reply = { keyboard: rows.map(row => row.map(label => ({ text: label }))), resize_keyboard: true, one_time_keyboard: true };
+    }
+    if (inlinePart) {
+      if (inlinePart.toLowerCase().startsWith('inline:')) {
+        const body = inlinePart.slice(7);
+        const ik = new InlineKeyboard();
+        const parts = body.split(',').map(s => s.trim()).filter(Boolean);
+        for (const p of parts) {
+          if (p.toLowerCase().startsWith('url:')) {
+            const rest = p.slice(4);
+            const [label, url] = rest.split('|').map(s => s && s.trim());
+            if (label && url) ik.url(label, url);
+          } else {
+            ik.text(p, `use:${p.replace(/^\//, '')}`);
+          }
+        }
+        result.inline = ik;
+      }
+    }
+    return result;
+  }
+
+  // inline-only syntax
   if (raw.toLowerCase().startsWith('inline:')) {
     const body = raw.slice(7);
     const ik = new InlineKeyboard();
     const parts = body.split(',').map(s => s.trim()).filter(Boolean);
     for (const p of parts) {
       if (p.toLowerCase().startsWith('url:')) {
-        // format: url:Label|https://...
         const rest = p.slice(4);
         const [label, url] = rest.split('|').map(s => s && s.trim());
         if (label && url) ik.url(label, url);
       } else {
-        // callback style: button text triggers callback use:<command>
         ik.text(p, `use:${p.replace(/^\//, '')}`);
       }
     }
@@ -117,7 +175,6 @@ function buildKeyboardFromString(k?: string) {
   }
 
   // Reply keyboard: use '|' to separate rows and ',' to separate columns within a row.
-  // Also accept newline characters as row separators.
   const rows = raw.split(/\r?\n|\|/).map(r => r.split(',').map(c => c.trim()).filter(Boolean)).filter(r => r.length > 0);
   if (rows.length === 0) return null;
   const replyKb = { keyboard: rows.map(row => row.map(label => ({ text: label }))), resize_keyboard: true, one_time_keyboard: true } as any;
@@ -166,12 +223,22 @@ async function registerCommands() {
       const text = c.answer || ' ';
       const kb = buildKeyboardFromString(c.keyboard);
       if (kb) {
+        // Combined object { reply, inline }
+        if (typeof kb === 'object' && (kb.reply || kb.inline)) {
+          if (kb.reply) {
+            await ctx.reply(text, { reply_markup: kb.reply });
+          }
+          if (kb.inline) {
+            await ctx.reply(text, { reply_markup: kb.inline });
+          }
+          return;
+        }
         // InlineKeyboard instance -> send as inline; otherwise send as reply keyboard
         if ((kb as any).constructor && (kb as any).constructor.name === 'InlineKeyboard') {
           await ctx.reply(text, { reply_markup: kb });
-        } else {
-          await ctx.reply(text, { reply_markup: kb });
+          return;
         }
+        await ctx.reply(text, { reply_markup: kb });
         return;
       }
       await ctx.reply(text);
