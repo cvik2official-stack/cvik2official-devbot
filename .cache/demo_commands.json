@@ -1,0 +1,155 @@
+[
+  {
+    "name": "start",
+    "answer": "Start always run in first. You can see /help",
+    "keyboard": "text, link,\nimage, 💬 emoji, inline,\n⚙️ BJS: Bot Java Script",
+    "aliases": [
+      "BACK"
+    ]
+  },
+  {
+    "name": "example",
+    "answer": "This is bot's answer for example command",
+    "keyboard": "",
+    "aliases": [
+      "ex",
+      "exa"
+    ]
+  },
+  {
+    "name": "format",
+    "answer": "You can use /text formating, insert /link, /image or use /inline text",
+    "keyboard": "",
+    "aliases": []
+  },
+  {
+    "name": "text",
+    "answer": "You can use *bold*, _italic_ text. \\n Use \"n\" for new line.",
+    "keyboard": "",
+    "aliases": [
+      "text"
+    ]
+  },
+  {
+    "name": "link",
+    "answer": "You can use [TEXT](URL) for links. *Example*: \\n\n[Google](http://google.com)",
+    "keyboard": "",
+    "aliases": [
+      "link"
+    ]
+  },
+  {
+    "name": "image",
+    "answer": "[Example pic](https://i.imgur.com/dUiW3Vd.png)",
+    "keyboard": "",
+    "aliases": [
+      "image"
+    ]
+  },
+  {
+    "name": "inline",
+    "answer": "Use inline blocks:\n`inline fixed-width code`\n```text\npre-formatted fixed-width code block\n```",
+    "keyboard": "",
+    "aliases": [
+      "inline"
+    ]
+  },
+  {
+    "name": "keyboard",
+    "answer": "Just use command or commands aliases in column \"keyboard\". Use \"n\" for new line",
+    "keyboard": "",
+    "aliases": []
+  },
+  {
+    "name": "lastupdate",
+    "answer": "*Last updated at:* 14:42 07.09.2025\\n\\n You can use formulas in answer!",
+    "keyboard": "",
+    "aliases": []
+  },
+  {
+    "name": "emoji",
+    "answer": "😂 🐛 🚀",
+    "keyboard": "",
+    "aliases": [
+      "💬 emoji"
+    ]
+  },
+  {
+    "name": "bjs",
+    "answer": "You can add logic with BJS",
+    "keyboard": "calculate 2+2, 🖼 send Photo,\n👀 send Sticker, 📱 Contact, 🔊 Audio, 📹 Video,\n🗺 Location, 🗺 Send Location,\n👤 Get user profile photos, BACK",
+    "aliases": [
+      "⚙️ BJS: Bot Java Script"
+    ]
+  },
+  {
+    "name": "calculate 2+2",
+    "answer": "",
+    "keyboard": "",
+    "aliases": []
+  },
+  {
+    "name": "photo",
+    "answer": "",
+    "keyboard": "",
+    "aliases": [
+      "🖼 send Photo"
+    ]
+  },
+  {
+    "name": "audio",
+    "answer": "",
+    "keyboard": "",
+    "aliases": [
+      "🔊 Audio"
+    ]
+  },
+  {
+    "name": "video",
+    "answer": "",
+    "keyboard": "",
+    "aliases": [
+      "📹 Video"
+    ]
+  },
+  {
+    "name": "location",
+    "answer": "",
+    "keyboard": "",
+    "aliases": [
+      "🗺 Location"
+    ]
+  },
+  {
+    "name": "sendLocation",
+    "answer": "Please share your location via 📎",
+    "keyboard": "",
+    "aliases": [
+      "🗺 Send Location"
+    ]
+  },
+  {
+    "name": "contact",
+    "answer": "",
+    "keyboard": "",
+    "aliases": [
+      "📱 Contact"
+    ]
+  },
+  {
+    "name": "sticker",
+    "answer": "",
+    "keyboard": "",
+    "aliases": [
+      "👀 send Sticker"
+    ]
+  },
+  {
+    "name": "profile",
+    "answer": "",
+    "keyboard": "",
+    "aliases": [
+      "👤 Get user profile photos"
+    ]
+  }
+]

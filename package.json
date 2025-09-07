@@ -1,0 +1,27 @@
+{
+  "name": "cvik2official-devbot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+  "start": "npm run build && node ./dist/bot.js",
+  "start:dev": "node --loader ts-node/esm ./bot.ts",
+  "build": "tsc -p tsconfig.json",
+  "append:start": "node ./tools/append_start.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+  "csv-parse": "^5.4.0",
+  "dotenv": "^16.0.0",
+  "grammy": "^1.38.2",
+  "node-fetch": "^2.6.7"
+  },
+  "devDependencies": {
+    "@types/csv-parse": "^1.1.12",
+    "@types/node-fetch": "^2.6.13",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.2"
+  }
+}
