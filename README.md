@@ -28,3 +28,28 @@ Append helper
 ```bash
 node ./tools/append_start.js
 ```
+
+Keyboard syntax
+----------------
+The CSV `keyboard` column supports two simple formats used by the bot:
+
+- Reply keyboard (users see Telegram reply buttons):
+	- Use comma to separate buttons on the same row, and `|` or a newline to separate rows.
+	- Example single-row: `Help,Contact`
+	- Example multi-row: `Option 1,Option 2|Help` (this produces two rows: [Option 1, Option 2] and [Help])
+
+- Inline keyboard (buttons below a message that can trigger callbacks or open URLs):
+	- Prefix the value with `inline:` followed by a comma-separated list of button specs.
+	- For simple callback buttons use the label directly: `inline:Use demo` (this will emit a callback with data `use:Use demo`).
+	- For URL buttons use `url:` then `Label|https://...`, for example: `inline:url:Open sheet|https://...`.
+	- Example: `inline:Use demo,url:Open sheet|https://example.com`
+
+Validation and warnings
+-----------------------
+- The bot performs light validation on keyboard values at startup and will log warnings for common problems:
+	- Empty labels or rows
+	- Button labels longer than 64 characters (Telegram limit for button text)
+	- Malformed inline `url:` entries (missing `|` or missing http/https)
+	- Extremely large keyboards (too many buttons)
+
+If you see a validation warning in the logs, fix the `keyboard` column in the CSV and use `npm run append:start` or the `/reload-demo` command during development to refresh.

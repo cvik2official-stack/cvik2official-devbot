@@ -1,0 +1,2 @@
+command,help,aliases,answer,keyboard,scenarios,need_reply,group,You
+/start,Start the bot,,Welcome! Use /help to see available commands.,"Help,Settings",link,,,

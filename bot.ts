@@ -92,19 +92,87 @@ async function loadCsvCommands(): Promise<Cmd[]> {
   return commands;
 }
 
+// Build keyboard helper: supports reply keyboards and a simple inline syntax.
+function buildKeyboardFromString(k?: string) {
+  if (!k) return null;
+  const raw = String(k).trim();
+
+  // inline syntax: starts with `inline:` then comma-separated button labels or url:Label|http...
+  if (raw.toLowerCase().startsWith('inline:')) {
+    const body = raw.slice(7);
+    const ik = new InlineKeyboard();
+    const parts = body.split(',').map(s => s.trim()).filter(Boolean);
+    for (const p of parts) {
+      if (p.toLowerCase().startsWith('url:')) {
+        // format: url:Label|https://...
+        const rest = p.slice(4);
+        const [label, url] = rest.split('|').map(s => s && s.trim());
+        if (label && url) ik.url(label, url);
+      } else {
+        // callback style: button text triggers callback use:<command>
+        ik.text(p, `use:${p.replace(/^\//, '')}`);
+      }
+    }
+    return ik;
+  }
+
+  // Reply keyboard: use '|' to separate rows and ',' to separate columns within a row.
+  // Also accept newline characters as row separators.
+  const rows = raw.split(/\r?\n|\|/).map(r => r.split(',').map(c => c.trim()).filter(Boolean)).filter(r => r.length > 0);
+  if (rows.length === 0) return null;
+  const replyKb = { keyboard: rows.map(row => row.map(label => ({ text: label }))), resize_keyboard: true, one_time_keyboard: true } as any;
+  return replyKb;
+}
+
+// Lightweight validation: warn about malformed or suspicious keyboard values
+function validateKeyboardString(k?: string, cmdName?: string) {
+  if (!k) return;
+  const raw = String(k).trim();
+  if (raw.length === 0) return console.warn(`[keyboard] empty keyboard for /${cmdName}`);
+  if (raw.length > 4000) return console.warn(`[keyboard] keyboard too large for /${cmdName}`);
+
+  if (raw.toLowerCase().startsWith('inline:')) {
+    const body = raw.slice(7);
+    const parts = body.split(',').map(s => s.trim()).filter(Boolean);
+    for (const p of parts) {
+      if (p.toLowerCase().startsWith('url:')) {
+        const rest = p.slice(4);
+        if (!rest.includes('|')) console.warn(`[keyboard] malformed url entry for /${cmdName}: ${p}`);
+        const url = rest.split('|')[1];
+        if (url && !/^https?:\/\//.test(url)) console.warn(`[keyboard] url may be invalid for /${cmdName}: ${url}`);
+      }
+      if (p.length > 64) console.warn(`[keyboard] button label too long for /${cmdName}: ${p.slice(0,80)}...`);
+    }
+  } else {
+    // reply keyboard
+    const rows = raw.split(/\r?\n|\|/).map(r => r.split(',').map(c => c.trim()).filter(Boolean));
+    if (rows.length === 0) return console.warn(`[keyboard] no rows parsed for /${cmdName}`);
+    let total = 0;
+    for (const row of rows) {
+      total += row.length;
+      for (const c of row) if (c.length > 64) console.warn(`[keyboard] button label too long for /${cmdName}: ${c.slice(0,80)}...`);
+    }
+    if (total > 100) console.warn(`[keyboard] very large keyboard for /${cmdName}: ${total} buttons`);
+  }
+}
+
 async function registerCommands() {
   const cmds = await loadCsvCommands();
   for (const c of cmds) {
+  // validate keyboard values and warn if suspicious
+  validateKeyboardString(c.keyboard, c.name);
     commandsMap.set(c.name, c);
     bot.command(c.name, async (ctx) => {
       const text = c.answer || ' ';
-      if (c.keyboard) {
-        const keys: string[] = c.keyboard.split(',').map((s: string) => s.trim()).filter(Boolean);
-        if (keys.length > 0) {
-          const replyKb = { keyboard: keys.map(k => [{ text: k }]), resize_keyboard: true, one_time_keyboard: true } as any;
-          await ctx.reply(text, { reply_markup: replyKb });
-          return;
+      const kb = buildKeyboardFromString(c.keyboard);
+      if (kb) {
+        // InlineKeyboard instance -> send as inline; otherwise send as reply keyboard
+        if ((kb as any).constructor && (kb as any).constructor.name === 'InlineKeyboard') {
+          await ctx.reply(text, { reply_markup: kb });
+        } else {
+          await ctx.reply(text, { reply_markup: kb });
         }
+        return;
       }
       await ctx.reply(text);
     });
@@ -135,15 +203,29 @@ bot.command('demo', async (ctx) => {
   const cmds = await loadCsvCommands();
   if (!cmds || cmds.length === 0) return await ctx.reply('No demo commands available.');
   const first = cmds[0];
-  const replyKb = { keyboard: [[{ text: first.name }], [{ text: 'help' }]], resize_keyboard: true, one_time_keyboard: true } as any;
+  // reply keyboard example (one row with the command, one row with help)
+  const replyKb = buildKeyboardFromString(`${first.name}|help`);
   await ctx.reply(`Reply keyboard example for /${first.name}`, { reply_markup: replyKb });
 
+  // inline keyboard example: one button that triggers the command via callback
   const ik = new InlineKeyboard().text('Use command', `use:${first.name}`);
   await ctx.reply('Inline keyboard example:', { reply_markup: ik });
 });
 
 bot.on('message', async (ctx) => {
   if (ctx.message?.text) await ctx.reply('You said: ' + ctx.message.text);
+});
+
+bot.command("reload-demo", async (ctx) => {
+  // restrict to bot owner in production — here it's dev-only
+  try {
+    if (fs.existsSync(CACHE_FILE)) fs.unlinkSync(CACHE_FILE);
+    await registerCommands(); // re-loads CSV and re-registers handlers
+    await ctx.reply("Demo commands reloaded (cache cleared).");
+  } catch (err) {
+    console.error("reload-demo error:", err);
+    await ctx.reply("Failed to reload demo commands.");
+  }
 });
 
 (async () => {
