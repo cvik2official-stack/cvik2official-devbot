@@ -15,6 +15,11 @@ Notes:
 - A local cache is used to avoid fetching the CSV on every command. Configure TTL with `DEMO_CSV_TTL` (seconds). Default 600s.
 - Supabase-related artifacts were removed from this branch; we will re-add production scaffolding when ready.
 
+Secrets
+- Do not store secrets in the repository. Use `.env` for local development (add real values to `.env` only locally and keep it in `.gitignore`).
+- For CI/CD or production, store secrets as GitHub Actions secrets or in a cloud secret manager.
+- Example: set `BOT_TOKEN` in GitHub repository secrets and reference it in your workflow.
+
 Append helper
 - A small helper script exists at `tools/append_start.js` which will try to append a `/start` row to the Google Sheet when a service account JSON is available at `./service-account.json`.
 - If no service account is found it will write a local file `DemoFromTableBot/commands-with-start.csv` containing the existing CSV plus the new `/start` row.
